@@ -25,8 +25,14 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 func main() {
 	serverOrigin := "http://localhost:8080"
 
-	// TODO: decide on which storage to use, how to integrate it better
-	var db Storage = &MemoryStorage{}
+	var db Storage
+
+	db, err := NewMemoryStorage()
+
+	if err != nil {
+		slog.Error("failed to create storage", "error", err)
+		return
+	}
 
 	t := &Template{
 		templates: template.Must(template.ParseGlob("templates/*.html")),
@@ -91,7 +97,7 @@ func main() {
 	e.GET("/qr/:invite", func(c echo.Context) error {
 		invite := c.Param("invite")
 
-		fullURL := fmt.Sprintf("%s/connect/%s", serverOrigin, invite)
+		fullURL := fmt.Sprintf("%s/invites/%s", serverOrigin, invite)
 
 		var png []byte
 		png, err := qrcode.Encode(fullURL, qrcode.Medium, 256)
@@ -99,6 +105,8 @@ func main() {
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "failed to generate QR code")
 		}
+
+		slog.Info("QR Code Generated", "url", fullURL)
 
 		return c.Blob(http.StatusOK, "image/png", png)
 	})
@@ -117,7 +125,7 @@ func main() {
 			return c.String(http.StatusInternalServerError, "failed to use invite")
 		}
 
-		fullURL := fmt.Sprintf("%s/user/%s", serverOrigin, currentUserHandle)
+		fullURL := fmt.Sprintf("%s/connections", serverOrigin)
 		return c.Redirect(http.StatusTemporaryRedirect, fullURL)
 	})
 
