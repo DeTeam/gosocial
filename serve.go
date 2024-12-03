@@ -72,30 +72,51 @@ func main() {
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("%s/connections", serverOrigin))
 	})
 
-	e.GET("/connections", func(c echo.Context) error {
-		handleCookie, err := c.Cookie("handle")
+	loginMiddleware := middleware.BasicAuthWithConfig(middleware.BasicAuthConfig{
+		Skipper: func(c echo.Context) bool {
+			handle, err := c.Cookie("handle")
 
-		if err != nil {
+			if err != nil {
+				return false
+			}
+
+			c.Set("handle", handle.Value)
+			return true
+		},
+
+		Validator: func(username, password string, c echo.Context) (bool, error) {
+			c.SetCookie(&http.Cookie{
+				Name:  "handle",
+				Value: username,
+			})
+			c.Set("handle", username)
+
+			return true, nil
+		},
+	})
+
+	e.GET("/connections", func(c echo.Context) error {
+		handle, ok := c.Get("handle").(string)
+		if !ok {
 			return c.String(http.StatusUnauthorized, "not logged in")
 		}
 
-		connections, err := db.ListConnections(handleCookie.Value)
+		connections, err := db.ListConnections(handle)
 
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "failed to list connections")
 		}
 
 		return c.Render(http.StatusOK, "connections.html", connections)
-	})
+	}, loginMiddleware)
 
 	e.POST("/invites", func(c echo.Context) error {
-		handleCookie, err := c.Cookie("handle")
-
-		if err != nil {
+		handle, ok := c.Get("handle").(string)
+		if !ok {
 			return c.String(http.StatusUnauthorized, "not logged in")
 		}
 
-		invite, err := db.NewInvite(handleCookie.Value)
+		invite, err := db.NewInvite(handle)
 
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "failed to create invite")
@@ -104,7 +125,7 @@ func main() {
 		fullURL := fmt.Sprintf("%s/qr/%s", serverOrigin, invite)
 
 		return c.Redirect(http.StatusSeeOther, fullURL)
-	})
+	}, loginMiddleware)
 
 	e.GET("/qr/:invite", func(c echo.Context) error {
 		invite := c.Param("invite")
@@ -124,12 +145,10 @@ func main() {
 	})
 
 	e.GET("/invites/:invite", func(c echo.Context) error {
-		handleCookie, err := c.Cookie("handle")
-		if err != nil {
+		currentUserHandle, ok := c.Get("handle").(string)
+		if !ok {
 			return c.String(http.StatusUnauthorized, "not logged in")
 		}
-
-		currentUserHandle := handleCookie.Value
 
 		err = db.UseInvite(currentUserHandle, c.Param("invite"))
 
@@ -139,7 +158,7 @@ func main() {
 
 		fullURL := fmt.Sprintf("%s/connections", serverOrigin)
 		return c.Redirect(http.StatusTemporaryRedirect, fullURL)
-	})
+	}, loginMiddleware)
 
 	if err := e.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("failed to start server", "error", err)
