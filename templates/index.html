@@ -1,0 +1,15 @@
+{{define "index.html"}}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+  <form action="/login" method="POST">
+    <label for="handle">Handle:</label>
+    <input type="text" id="handle" name="handle" required>
+    <button type="submit">Login</button>
+  </form>
+</body>
+</html>
+{{end}}

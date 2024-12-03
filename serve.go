@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"html/template"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -12,20 +14,32 @@ import (
 	qrcode "github.com/skip2/go-qrcode"
 )
 
+type Template struct {
+	templates *template.Template
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
 func main() {
 	serverOrigin := "http://localhost:8080"
 
 	// TODO: decide on which storage to use, how to integrate it better
 	var db Storage = &MemoryStorage{}
 
+	t := &Template{
+		templates: template.Must(template.ParseGlob("templates/*.html")),
+	}
+
 	e := echo.New()
+	e.Renderer = t
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	e.GET("/", func(c echo.Context) error {
-		// TODO: display a simple login page
-		return c.String(http.StatusOK, "TBD")
+		return c.Render(http.StatusOK, "index.html", nil)
 	})
 
 	e.POST("/login", func(c echo.Context) error {
@@ -36,7 +50,8 @@ func main() {
 			Value: handle,
 		})
 
-		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/connections", serverOrigin))
+		// SeeOther would force POST -> GET when redirecting
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("%s/connections", serverOrigin))
 	})
 
 	e.GET("/connections", func(c echo.Context) error {
@@ -52,7 +67,7 @@ func main() {
 			return c.String(http.StatusInternalServerError, "failed to list connections")
 		}
 
-		return c.String(http.StatusOK, fmt.Sprint(connections))
+		return c.Render(http.StatusOK, "connections.html", connections)
 	})
 
 	e.POST("/invites", func(c echo.Context) error {
@@ -70,7 +85,7 @@ func main() {
 
 		fullURL := fmt.Sprintf("%s/qr/%s", serverOrigin, invite)
 
-		return c.String(http.StatusOK, fullURL)
+		return c.Redirect(http.StatusSeeOther, fullURL)
 	})
 
 	e.GET("/qr/:invite", func(c echo.Context) error {

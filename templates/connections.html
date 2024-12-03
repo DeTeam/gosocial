@@ -1,0 +1,19 @@
+{{define "connections.html"}}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Connections</title>
+</head>
+<body>
+  <ul>
+    {{range .}}
+    <li>{{.Target}}</li>
+    {{end}}
+  </ul>
+
+  <form action="/invites" method="POST">
+    <button type="submit">Generate Invite QR Code</button>
+  </form>
+</body>
+</html>
+{{end}}
