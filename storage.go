@@ -15,6 +15,7 @@ type Storage interface {
 	UseInvite(handle, inviteToken string) error
 }
 
+// TODO: implement a real storage
 type MemoryStorage struct{}
 
 func (m *MemoryStorage) ListConnections(handle string) ([]Connection, error) {

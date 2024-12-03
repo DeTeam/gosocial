@@ -42,10 +42,6 @@ func main() {
 	})
 
 	e.POST("/user/:handle/invite", func(c echo.Context) error {
-		// TODO:
-		// 1.	Create an invite
-		// 2. Generate a QR code link for the real invite instead of mock
-
 		handle := c.Param("handle")
 		invite, err := db.NewInvite(handle)
 
@@ -74,6 +70,7 @@ func main() {
 	})
 
 	e.GET("/connect/:invite", func(c echo.Context) error {
+		// TODO: find a way to get the current user handle
 		currentUserHandle := "test2"
 
 		err := db.UseInvite(currentUserHandle, c.Param("invite"))
