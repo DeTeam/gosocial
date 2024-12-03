@@ -15,6 +15,9 @@ import (
 func main() {
 	serverOrigin := "http://localhost:8080"
 
+	// TODO: decide on which storage to use, how to integrate it better
+	var db Storage = &MemoryStorage{}
+
 	e := echo.New()
 
 	e.Use(middleware.Logger())
@@ -29,9 +32,13 @@ func main() {
 	e.GET("/user/:handle", func(c echo.Context) error {
 		handle := c.Param("handle")
 
-		// TODO: find and list connections
+		connections, err := db.ListConnections(handle)
 
-		return c.String(http.StatusOK, handle)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "failed to list connections")
+		}
+
+		return c.String(http.StatusOK, fmt.Sprint(connections))
 	})
 
 	e.POST("/user/:handle/invite", func(c echo.Context) error {
@@ -39,7 +46,13 @@ func main() {
 		// 1.	Create an invite
 		// 2. Generate a QR code link for the real invite instead of mock
 
-		invite := "test"
+		handle := c.Param("handle")
+		invite, err := db.NewInvite(handle)
+
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "failed to create invite")
+		}
+
 		fullURL := fmt.Sprintf("%s/qr/%s", serverOrigin, invite)
 
 		return c.String(http.StatusOK, fullURL)
@@ -61,12 +74,15 @@ func main() {
 	})
 
 	e.GET("/connect/:invite", func(c echo.Context) error {
-		// TODO: create a connection, invalidate the invite
+		currentUserHandle := "test2"
 
-		// TODO: redirect to the correct handle of the connecting user
-		handle := "test"
+		err := db.UseInvite(currentUserHandle, c.Param("invite"))
 
-		fullURL := fmt.Sprintf("%s/user/%s", serverOrigin, handle)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "failed to use invite")
+		}
+
+		fullURL := fmt.Sprintf("%s/user/%s", serverOrigin, currentUserHandle)
 		return c.Redirect(http.StatusTemporaryRedirect, fullURL)
 	})
 
