@@ -25,14 +25,28 @@ func main() {
 
 	e.GET("/", func(c echo.Context) error {
 		// TODO: display a simple login page
-
 		return c.String(http.StatusOK, "TBD")
 	})
 
-	e.GET("/user/:handle", func(c echo.Context) error {
-		handle := c.Param("handle")
+	e.POST("/login", func(c echo.Context) error {
+		handle := c.FormValue("handle")
 
-		connections, err := db.ListConnections(handle)
+		c.SetCookie(&http.Cookie{
+			Name:  "handle",
+			Value: handle,
+		})
+
+		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/connections", serverOrigin))
+	})
+
+	e.GET("/connections", func(c echo.Context) error {
+		handleCookie, err := c.Cookie("handle")
+
+		if err != nil {
+			return c.String(http.StatusUnauthorized, "not logged in")
+		}
+
+		connections, err := db.ListConnections(handleCookie.Value)
 
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "failed to list connections")
@@ -41,9 +55,14 @@ func main() {
 		return c.String(http.StatusOK, fmt.Sprint(connections))
 	})
 
-	e.POST("/user/:handle/invite", func(c echo.Context) error {
-		handle := c.Param("handle")
-		invite, err := db.NewInvite(handle)
+	e.POST("/invites", func(c echo.Context) error {
+		handleCookie, err := c.Cookie("handle")
+
+		if err != nil {
+			return c.String(http.StatusUnauthorized, "not logged in")
+		}
+
+		invite, err := db.NewInvite(handleCookie.Value)
 
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "failed to create invite")
@@ -69,11 +88,15 @@ func main() {
 		return c.Blob(http.StatusOK, "image/png", png)
 	})
 
-	e.GET("/connect/:invite", func(c echo.Context) error {
-		// TODO: find a way to get the current user handle
-		currentUserHandle := "test2"
+	e.GET("/invites/:invite", func(c echo.Context) error {
+		handleCookie, err := c.Cookie("handle")
+		if err != nil {
+			return c.String(http.StatusUnauthorized, "not logged in")
+		}
 
-		err := db.UseInvite(currentUserHandle, c.Param("invite"))
+		currentUserHandle := handleCookie.Value
+
+		err = db.UseInvite(currentUserHandle, c.Param("invite"))
 
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "failed to use invite")
