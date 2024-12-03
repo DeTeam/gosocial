@@ -25,8 +25,9 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 func main() {
 	serverOrigin := "http://localhost:8080"
 
+	// Using in-memory sqlite
+	// Tables are create on the fly
 	var db Storage
-
 	db, err := NewMemoryStorage()
 
 	if err != nil {
@@ -34,6 +35,7 @@ func main() {
 		return
 	}
 
+	// Using golang html templates for a few pages
 	t := &Template{
 		templates: template.Must(template.ParseGlob("templates/*.html")),
 	}
@@ -48,6 +50,7 @@ func main() {
 		return c.Render(http.StatusOK, "index.html", nil)
 	})
 
+	// User handle is stored within "handle" cookie
 	e.POST("/login", func(c echo.Context) error {
 		handle := c.FormValue("handle")
 
