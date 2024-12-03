@@ -37,8 +37,12 @@ func main() {
 	e.POST("/user/:handle/invite", func(c echo.Context) error {
 		// TODO:
 		// 1.	Create an invite
-		// 2. Generate a QR code link for the invite, return in response
-		return c.String(http.StatusOK, "TBD")
+		// 2. Generate a QR code link for the real invite instead of mock
+
+		invite := "test"
+		fullURL := fmt.Sprintf("%s/qr/%s", serverOrigin, invite)
+
+		return c.String(http.StatusOK, fullURL)
 	})
 
 	e.GET("/qr/:invite", func(c echo.Context) error {
@@ -55,6 +59,15 @@ func main() {
 
 		return c.Blob(http.StatusOK, "image/png", png)
 	})
+
+	e.GET("/connect/:invite", func(c echo.Context) error {
+		// TODO: create a connection, invalidate the invite
+
+		// TODO: redirect to the correct handle of the connecting user
+		handle := "test"
+
+		fullURL := fmt.Sprintf("%s/user/%s", serverOrigin, handle)
+		return c.Redirect(http.StatusTemporaryRedirect, fullURL)
 	})
 
 	if err := e.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
