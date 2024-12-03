@@ -1,19 +1,20 @@
 {{define "connections.html"}}
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Connections</title>
-</head>
-<body>
-  <ul>
-    {{range .}}
-    <li>{{.Target}}</li>
-    {{end}}
-  </ul>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body>
+    <ul>
+      {{range .}}
+      <li>{{.Target}}</li>
+      {{end}}
+    </ul>
 
-  <form action="/invites" method="POST">
-    <button type="submit">Generate Invite QR Code</button>
-  </form>
-</body>
+    <form action="/invites" method="POST">
+      <button type="submit">Generate Invite QR Code</button>
+    </form>
+  </body>
 </html>
 {{end}}

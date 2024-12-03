@@ -1,18 +1,23 @@
 package main
 
 import (
+	"embed"
 	"errors"
 	"fmt"
 	"html/template"
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
 	qrcode "github.com/skip2/go-qrcode"
 )
+
+//go:embed templates/*
+var resources embed.FS
 
 type Template struct {
 	templates *template.Template
@@ -23,7 +28,11 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 }
 
 func main() {
-	serverOrigin := "http://localhost:8080"
+	serverOrigin := os.Getenv("SERVER_ORIGIN")
+
+	if serverOrigin == "" {
+		serverOrigin = "http://localhost:8080"
+	}
 
 	// Using in-memory sqlite
 	// Tables are create on the fly
@@ -37,7 +46,7 @@ func main() {
 
 	// Using golang html templates for a few pages
 	t := &Template{
-		templates: template.Must(template.ParseGlob("templates/*.html")),
+		templates: template.Must(template.ParseFS(resources, "templates/*")),
 	}
 
 	e := echo.New()

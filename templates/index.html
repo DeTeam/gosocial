@@ -1,15 +1,16 @@
 {{define "index.html"}}
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Login</title>
-</head>
-<body>
-  <form action="/login" method="POST">
-    <label for="handle">Handle:</label>
-    <input type="text" id="handle" name="handle" required>
-    <button type="submit">Login</button>
-  </form>
-</body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body>
+    <form action="/login" method="POST">
+      <label for="handle">Handle:</label>
+      <input type="text" id="handle" name="handle" required />
+      <button type="submit">Login</button>
+    </form>
+  </body>
 </html>
 {{end}}
