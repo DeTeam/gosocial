@@ -72,6 +72,8 @@ func main() {
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("%s/connections", serverOrigin))
 	})
 
+	// Instead of silently failing when user is not logged in we can use basic auth to get the handle.
+	// This way a person following link from a qr code would be able to connect smoothly.
 	loginMiddleware := middleware.BasicAuthWithConfig(middleware.BasicAuthConfig{
 		Skipper: func(c echo.Context) bool {
 			handle, err := c.Cookie("handle")
