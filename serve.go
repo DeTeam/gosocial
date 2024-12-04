@@ -27,6 +27,11 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
+type UserProfile struct {
+	Handle      string
+	Connections []Connection
+}
+
 func main() {
 	serverOrigin := os.Getenv("SERVER_ORIGIN")
 
@@ -109,7 +114,12 @@ func main() {
 			return c.String(http.StatusInternalServerError, "failed to list connections")
 		}
 
-		return c.Render(http.StatusOK, "connections.html", connections)
+		profile := UserProfile{
+			Handle:      handle,
+			Connections: connections,
+		}
+
+		return c.Render(http.StatusOK, "connections.html", profile)
 	}, loginMiddleware)
 
 	e.POST("/invites", func(c echo.Context) error {
